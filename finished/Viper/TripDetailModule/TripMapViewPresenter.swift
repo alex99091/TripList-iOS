@@ -26,43 +26,33 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import SwiftUI
+import MapKit
 import Combine
 
-class TripListPresenter: ObservableObject {
-    private let interactor: TripListInteractor
-    private let router = TripListRouter()
-    
-    private var cancellables = Set<AnyCancellable>()
-    
-    @Published var trips: [Trip] = []
-    
-    init(interactor: TripListInteractor) {
-        self.interactor = interactor
-        
-        interactor.model.$trips
-            .assign(to: \.trips, on: self)
-            .store(in: &cancellables)
-    }
-    
-    func makeAddNewButton() -> some View {
-        Button(action: addNewTrip) {
-            Image(systemName: "plus")
+class TripMapViewPresenter: ObservableObject {
+  @Published var pins: [MKAnnotation] = []
+  @Published var routes: [MKRoute] = []
+
+  let interactor: TripDetailInteractor
+  private var cancellables = Set<AnyCancellable>()
+
+  init(interactor: TripDetailInteractor) {
+    self.interactor = interactor
+
+    interactor.$waypoints
+      .map {
+        $0.map {
+          let annotation = MKPointAnnotation()
+          annotation.coordinate = $0.location
+          return annotation
         }
     }
-    
-    func addNewTrip() {
-        interactor.addNewTrip()
-    }
-    
-    func deleteTrip(_ index: IndexSet) {
-        interactor.deleteTrip(index)
-    }
-    
-    func linkBuilder<Content: View>(for trip: Trip, @ViewBuilder content: () -> Content
-    ) -> some View {
-        NavigationLink(destination: router.makeDetailView(for: trip, model: interactor.model)) {
-            content()
-        }
-    }
+    .assign(to: \.pins, on: self)
+    .store(in: &cancellables)
+
+    interactor.$directions
+      .assign(to: \.routes, on: self)
+      .store(in: &cancellables)
+  }
 }
+
