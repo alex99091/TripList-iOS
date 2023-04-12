@@ -107,9 +107,7 @@ interactor.model.$trips
 ```
 
 ### 뷰 만들기
-→ Configurator는 VIP 주기의 구성 요소를 인스턴스화 하고, 연결하여 단방향 사이클을 생성합니다.
-
-→ 모든 Scene에서 하나의 Configurator를 한번만 호출하여 사용해야 합니다.
+→ 첫 번째 뷰인 여행 목록을 구현합니다.
 
 ```Swift
 /* TripListView에 TripListPresenter 속성을 추가하여 프리젠터를 뷰에 연결합니다. */
@@ -134,4 +132,124 @@ List {
 }
 ```
 
+### 뷰에 모델 적용하기
+→ 위에서는 View를 구성하기 위해 Presenter 통해 Entity에서 Interactor로 이어지는 데이터 흐름을 살펴보았는데, 아래의 구현을 통하여 Presenter에서 View로 데이터를 보낼 수 있습니다.
 
+```Swift
+/* TripListInteractor에 add와 delete 메서드를 추가합니다. */
+
+func addNewTrip() {
+  model.pushNewTrip()
+}
+
+func deleteTrip(_ index: IndexSet) {
+  model.trips.remove(atOffsets: index)
+}
+```
+
+```Swift
+/* TripListPresenter에 interactor의 add와 delete 메서드를 입력받아 생성과 삭제를 구현하는 메서드를 만듭니다. */
+
+func makeAddNewButton() -> some View {
+  Button(action: addNewTrip) {
+    Image(systemName: "plus")
+  }
+}
+
+func addNewTrip() {
+  interactor.addNewTrip()
+}
+
+func deleteTrip(_ index: IndexSet) {
+  interactor.deleteTrip(index)
+}
+```
+
+```Swift
+/* TripListView에서 .navigationBarItems 함수를 사용하여 버튼과 제목을 네비게이션 바에 추가합니다. */
+
+.navigationBarTitle("Roadtrips", displayMode: .inline)
+.navigationBarItems(trailing: presenter.makeAddNewButton())
+
+/* TripListView에서 .onDelete 함수를 사용하여 리스트의 항목에서 swipe to delete 동작을 가능하게 하고,
+   항목 삭제 액션은 presenter.deleteTrip(_:) 함수로 전달됩니다. */
+
+.onDelete(perform: presenter.deleteTrip)
+```
+
+```Swift
+/* TripListView_Previews에서 NavigationView로 감싸줍니다. */
+
+return NavigationView {
+  TripListView(presenter: presenter)
+}
+```
+
+```Swift
+/* ContentView에서 아래와 같이 Body부분을 수정하여 Presenter의 Interactor과 모델로 이어지는 데이터 흐름을 보여줍니다. */
+
+TripListView(presenter:
+  TripListPresenter(interactor:
+    TripListInteractor(model: model)))
+```
+
+### Routing 적용하기
+→ 화면 전환이 일어날 때, 다음 화면으로 전환할 때 필요한 데이터와 함께 화면을 전환하는 기능을 말합니다. 새로운 View를 생성하고 필요한 데이터를 넘겨줌으로써 다음 View로 이동합니다.
+
+```Swift
+/* TripListRouter 파일을 생성하여 다음과 같은 코드를 추가합니다. */
+
+import SwiftUI
+
+class TripListRouter {
+  func makeDetailView(for trip: Trip, model: DataModel) -> some View {
+    let presenter = TripDetailPresenter(interactor:
+      TripDetailInteractor(
+        trip: trip,
+        model: model,
+        mapInfoProvider: RealMapDataProvider()))
+    return TripDetailView(presenter: presenter)
+  }
+}
+```
+
+```Swift
+/* TripListPresenter에서 라우터를 추가합니다. */
+
+private let router = TripListRouter()
+```
+
+```Swift
+/* TripListPresenter에서 라우터를 추가합니다. */
+
+func linkBuilder<Content: View>(
+    for trip: Trip,
+    @ViewBuilder content: () -> Content
+  ) -> some View {
+    NavigationLink(
+      destination: router.makeDetailView(
+        for: trip,
+        model: interactor.model)) {
+          content()
+    }
+}
+```
+
+```Swift
+/* TripListView에서 다음과 같이 코드를 변경합니다. */
+
+self.presenter.linkBuilder(for: item) {
+  TripListCell(trip: item)
+    .frame(height: 240)
+}
+```
+
+→ 위의 방법으로 Presenter는 Router를 사용해 다음 View를 생성하고, 해당 View를 보여주기 위한 NavigationLink를 생성한 후에, View는 NavigationLink를 사용해 다음 View로 이동하게 되며, 이 때 Router는 필요한 데이터를 함께 전달합니다.
+
+
+- 모듈은 Presenter, Interactor 및 Rotuer에 대한 인터페이스를 노출하고, 각 모듈을 패키징하지 않는 한 모듈을 그룹으로 개념화 할 수 있습니다.
+- 위와 같은 방식으로 TripListView, TripListPresenter, TripListInteractor, TripListRouter를 가져와 TripListModule이라는 그룹으로 그룹화합니다.
+- Detail의 세부 클래스 역시, 동일한 방식으로 구현할 수 있습니다.
+
+- 모듈은 코드를 깨끗하고 분리된 상태로 유지하는 좋은 방법이며, 일반적으로 모듈은 개념적 화면/기능이어야 하며 라우터는 사용자를 모듈 간에 전달합니다.
+- 뷰 상태를 확인하고, 엔티티와 직접 상호 작용하는 단일 ObservableObject로 프레젠터 및 인터랙터 기능을 축소하여 적용할 수 있습니다.
