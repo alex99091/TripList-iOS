@@ -247,9 +247,14 @@ self.presenter.linkBuilder(for: item) {
 → 위의 방법으로 Presenter는 Router를 사용해 다음 View를 생성하고, 해당 View를 보여주기 위한 NavigationLink를 생성한 후에, View는 NavigationLink를 사용해 다음 View로 이동하게 되며, 이 때 Router는 필요한 데이터를 함께 전달합니다.
 
 
-- 모듈은 Presenter, Interactor 및 Rotuer에 대한 인터페이스를 노출하고, 각 모듈을 패키징하지 않는 한 모듈을 그룹으로 개념화 할 수 있습니다.
-- 위와 같은 방식으로 TripListView, TripListPresenter, TripListInteractor, TripListRouter를 가져와 TripListModule이라는 그룹으로 그룹화합니다.
-- Detail의 세부 클래스 역시, 동일한 방식으로 구현할 수 있습니다.
+### 종합하여...
 
-- 모듈은 코드를 깨끗하고 분리된 상태로 유지하는 좋은 방법이며, 일반적으로 모듈은 개념적 화면/기능이어야 하며 라우터는 사용자를 모듈 간에 전달합니다.
-- 뷰 상태를 확인하고, 엔티티와 직접 상호 작용하는 단일 ObservableObject로 프레젠터 및 인터랙터 기능을 축소하여 적용할 수 있습니다.
+모듈은 Presenter, Interactor 및 Rotuer에 대한 인터페이스를 노출하고, 각 모듈을 패키징하지 않는 한 모듈을 그룹으로 개념화 할 수 있습니다.
+
+위와 같은 방식으로 TripListView, TripListPresenter, TripListInteractor, TripListRouter를 가져와 TripListModule이라는 그룹으로 그룹화합니다.
+
+Detail의 세부 클래스 역시, 동일한 방식으로 구현할 수 있습니다.
+
+모듈은 코드를 깨끗하고 분리된 상태로 유지하는 좋은 방법이며, 일반적으로 모듈은 개념적 화면/기능이어야 하며 라우터는 사용자를 모듈 간에 전달합니다.
+
+뷰 상태를 확인하고, 엔티티와 직접 상호 작용하는 단일 ObservableObject로 프레젠터 및 인터랙터 기능을 축소하여 적용할 수 있습니다.
